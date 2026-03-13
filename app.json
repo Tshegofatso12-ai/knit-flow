@@ -13,7 +13,8 @@
       "backgroundColor": "#fdfbf9"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tshegofatsomaseko.knitflow"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.tshegofatsomaseko.knitflow"
     },
     "web": {
       "favicon": "./assets/favicon.png"
