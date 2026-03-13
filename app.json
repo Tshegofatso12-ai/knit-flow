@@ -5,28 +5,39 @@
     "version": "1.0.0",
     "scheme": "knitflow",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/knitflow.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/knitflow.png",
       "resizeMode": "contain",
       "backgroundColor": "#fdfbf9"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tshegofatsomaseko.knitflow",
+      "icon": "./assets/knitflow.png"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#fdfbf9",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/knitflow.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.tshegofatsomaseko.knitflow"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/knitflow.png"
     },
-    "plugins": ["expo-router", "expo-font"]
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3022911898728747~5661893626",
+          "iosAppId": "ca-app-pub-3022911898728747~5661893626"
+        }
+      ]
+    ]
   }
 }

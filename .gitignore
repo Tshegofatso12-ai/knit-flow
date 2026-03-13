@@ -1,1 +1,9 @@
 node_modules
+
+# Expo
+.expo/
+ios/
+android/
+
+# Build logs
+*.log

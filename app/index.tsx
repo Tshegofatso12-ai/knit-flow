@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 
 import { Header } from '../components/Header';
 import { ActiveProjectCard } from '../components/ActiveProjectCard';
@@ -13,6 +14,7 @@ import { ProjectModal } from '../components/ProjectModal';
 import { useRowCounter } from '../hooks/useRowCounter';
 import { useSessionTimer } from '../hooks/useSessionTimer';
 import { theme } from '../constants/theme';
+import { BANNER_AD_UNIT_ID } from '../constants/ads';
 
 function calculatePace(sessionRowsAdded: number, sessionStartedAt: number | null): string {
   if (sessionStartedAt === null || sessionRowsAdded === 0) return '--';
@@ -62,6 +64,14 @@ export default function HomeScreen() {
         <FooterStats sessionTime={sessionTime} pace={pace} />
       </ScrollView>
 
+      <View style={styles.bannerContainer}>
+        <BannerAd
+          unitId={BANNER_AD_UNIT_ID}
+          size={BannerAdSize.BANNER}
+          requestOptions={{ requestNonPersonalizedAdsOnly: false }}
+        />
+      </View>
+
       <ProjectModal
         visible={modalVisible}
         projects={projects}
@@ -85,6 +95,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: theme.spacing.lg,
     gap: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
   },
   counterSection: {
     flex: 1,
@@ -92,5 +103,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.spacing.lg,
     paddingVertical: theme.spacing.lg,
+  },
+  bannerContainer: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
   },
 });
