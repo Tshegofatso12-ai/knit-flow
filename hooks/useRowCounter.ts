@@ -8,21 +8,35 @@ const DEFAULT_PROJECT: Project = {
   id: 'default',
   name: 'Cozy Oversized Sweater',
   rowCount: 0,
+  createdAt: new Date().toISOString(),
+  sessionStartedAt: null,
+  sessionRowsAdded: 0,
 };
 
-const DEFAULT_DATA: PersistedData = {
-  currentProject: DEFAULT_PROJECT,
-  lastSavedAt: new Date().toISOString(),
-};
+/** Ensure projects loaded from storage always have session fields (migration). */
+function normalise(p: Project): Project {
+  return {
+    ...p,
+    sessionStartedAt: p.sessionStartedAt ?? null,
+    sessionRowsAdded: p.sessionRowsAdded ?? 0,
+  };
+}
 
 export function useRowCounter() {
   const [isLoading, setIsLoading] = useState(true);
-  const [currentProject, setCurrentProject] = useState<Project>(DEFAULT_PROJECT);
-  const [count, setCount] = useState(0);
+  const [projects, setProjects] = useState<Project[]>([DEFAULT_PROJECT]);
+  const [activeProjectId, setActiveProjectId] = useState<string>(DEFAULT_PROJECT.id);
+
+  // Local mirrors of the active project's session — kept in sync so the timer
+  // and pace calculation always read the latest value without waiting for a
+  // re-render from the projects array update.
   const [sessionRowsAdded, setSessionRowsAdded] = useState(0);
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeProject = projects.find((p) => p.id === activeProjectId) ?? projects[0];
+  const count = activeProject?.rowCount ?? 0;
 
   // Load persisted state on mount
   useEffect(() => {
@@ -30,9 +44,31 @@ export function useRowCounter() {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
-          const data: PersistedData = JSON.parse(raw);
-          setCurrentProject(data.currentProject);
-          setCount(data.currentProject.rowCount);
+          const parsed = JSON.parse(raw);
+          let loadedProjects: Project[];
+          let loadedActiveId: string;
+
+          // Migrate from old single-project format
+          if (parsed.currentProject && !parsed.projects) {
+            const migrated = normalise({
+              ...parsed.currentProject,
+              createdAt: parsed.lastSavedAt ?? new Date().toISOString(),
+            });
+            loadedProjects = [migrated];
+            loadedActiveId = migrated.id;
+          } else {
+            const data: PersistedData = parsed;
+            loadedProjects = data.projects.map(normalise);
+            loadedActiveId = data.activeProjectId;
+          }
+
+          setProjects(loadedProjects);
+          setActiveProjectId(loadedActiveId);
+
+          // Restore session for the active project
+          const active = loadedProjects.find((p) => p.id === loadedActiveId) ?? loadedProjects[0];
+          setSessionStartedAt(active.sessionStartedAt);
+          setSessionRowsAdded(active.sessionRowsAdded);
         }
       } catch {
         // Fall back to defaults silently
@@ -43,86 +79,158 @@ export function useRowCounter() {
     load();
   }, []);
 
-  const debouncedSave = useCallback((updatedProject: Project) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
+  const debouncedSave = useCallback((updatedProjects: Project[], currentActiveId: string) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
       try {
-        const data: PersistedData = {
-          currentProject: updatedProject,
-          lastSavedAt: new Date().toISOString(),
-        };
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch {
-        // Ignore save errors
-      }
+        await AsyncStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ projects: updatedProjects, activeProjectId: currentActiveId } satisfies PersistedData)
+        );
+      } catch { /* ignore */ }
     }, 300);
   }, []);
 
-  const saveImmediately = useCallback(async (updatedProject: Project) => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-    }
+  const saveImmediately = useCallback(async (updatedProjects: Project[], currentActiveId: string) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     try {
-      const data: PersistedData = {
-        currentProject: updatedProject,
-        lastSavedAt: new Date().toISOString(),
-      };
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Ignore save errors
-    }
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ projects: updatedProjects, activeProjectId: currentActiveId } satisfies PersistedData)
+      );
+    } catch { /* ignore */ }
   }, []);
 
   const increment = useCallback(() => {
-    setCount((prev) => {
-      const next = prev + 1;
-      const updated = { ...currentProject, rowCount: next };
-      setCurrentProject(updated);
-      debouncedSave(updated);
-      return next;
+    const now = Date.now();
+    setProjects((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id !== activeProjectId) return p;
+        const startedAt = p.sessionStartedAt ?? now;
+        return {
+          ...p,
+          rowCount: p.rowCount + 1,
+          sessionStartedAt: startedAt,
+          sessionRowsAdded: p.sessionRowsAdded + 1,
+        };
+      });
+      debouncedSave(updated, activeProjectId);
+      return updated;
     });
     setSessionRowsAdded((prev) => prev + 1);
-    setSessionStartedAt((prev) => prev ?? Date.now());
-  }, [currentProject, debouncedSave]);
+    setSessionStartedAt((prev) => prev ?? now);
+  }, [activeProjectId, debouncedSave]);
 
   const decrement = useCallback(() => {
-    setCount((prev) => {
-      const next = Math.max(0, prev - 1);
-      const updated = { ...currentProject, rowCount: next };
-      setCurrentProject(updated);
-      debouncedSave(updated);
-      return next;
+    setProjects((prev) => {
+      const updated = prev.map((p) =>
+        p.id === activeProjectId ? { ...p, rowCount: Math.max(0, p.rowCount - 1) } : p
+      );
+      debouncedSave(updated, activeProjectId);
+      return updated;
     });
-  }, [currentProject, debouncedSave]);
+  }, [activeProjectId, debouncedSave]);
 
   const reset = useCallback(() => {
-    const updated = { ...currentProject, rowCount: 0 };
-    setCount(0);
-    setCurrentProject(updated);
+    setProjects((prev) => {
+      const updated = prev.map((p) =>
+        p.id === activeProjectId
+          ? { ...p, rowCount: 0, sessionStartedAt: null, sessionRowsAdded: 0 }
+          : p
+      );
+      saveImmediately(updated, activeProjectId);
+      return updated;
+    });
     setSessionRowsAdded(0);
     setSessionStartedAt(null);
-    saveImmediately(updated);
-  }, [currentProject, saveImmediately]);
+  }, [activeProjectId, saveImmediately]);
 
-  // Cleanup debounce timer on unmount
+  const createProject = useCallback(
+    (name: string) => {
+      const newProject: Project = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        rowCount: 0,
+        createdAt: new Date().toISOString(),
+        sessionStartedAt: null,
+        sessionRowsAdded: 0,
+      };
+      setProjects((prev) => {
+        const updated = [...prev, newProject];
+        saveImmediately(updated, newProject.id);
+        return updated;
+      });
+      setActiveProjectId(newProject.id);
+      setSessionRowsAdded(0);
+      setSessionStartedAt(null);
+    },
+    [saveImmediately]
+  );
+
+  const switchProject = useCallback(
+    (id: string) => {
+      setProjects((prev) => {
+        const target = prev.find((p) => p.id === id) ?? prev[0];
+        setActiveProjectId(target.id);
+        setSessionRowsAdded(target.sessionRowsAdded);
+        setSessionStartedAt(target.sessionStartedAt);
+        saveImmediately(prev, target.id);
+        return prev;
+      });
+    },
+    [saveImmediately]
+  );
+
+  const renameProject = useCallback(
+    (id: string, name: string) => {
+      setProjects((prev) => {
+        const updated = prev.map((p) => (p.id === id ? { ...p, name: name.trim() } : p));
+        saveImmediately(updated, activeProjectId);
+        return updated;
+      });
+    },
+    [activeProjectId, saveImmediately]
+  );
+
+  const deleteProject = useCallback(
+    (id: string) => {
+      setProjects((prev) => {
+        if (prev.length <= 1) return prev;
+        const updated = prev.filter((p) => p.id !== id);
+        const newActiveId = id === activeProjectId ? updated[0].id : activeProjectId;
+        if (id === activeProjectId) {
+          const newActive = updated.find((p) => p.id === newActiveId) ?? updated[0];
+          setActiveProjectId(newActive.id);
+          setSessionRowsAdded(newActive.sessionRowsAdded);
+          setSessionStartedAt(newActive.sessionStartedAt);
+        }
+        saveImmediately(updated, newActiveId);
+        return updated;
+      });
+    },
+    [activeProjectId, saveImmediately]
+  );
+
   useEffect(() => {
     return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, []);
 
   return {
     count,
-    currentProject,
+    activeProject,
+    projects,
+    activeProjectId,
     sessionRowsAdded,
     sessionStartedAt,
     isLoading,
     increment,
     decrement,
     reset,
+    createProject,
+    switchProject,
+    renameProject,
+    deleteProject,
   };
 }

@@ -2,10 +2,10 @@ export const theme = {
   colors: {
     background: '#fdfbf9',
     foreground: '#433935',
-    primary: '#d4a373',
+    primary: '#8B5CF6',
     primaryForeground: '#ffffff',
-    secondary: '#faedcd',
-    secondaryForeground: '#433935',
+    secondary: '#EDE9FE',
+    secondaryForeground: '#4C1D95',
     border: '#e8e2de',
     card: '#ffffff',
     cardForeground: '#2C332A',

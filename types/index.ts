@@ -2,9 +2,12 @@ export interface Project {
   id: string;
   name: string;
   rowCount: number;
+  createdAt: string;
+  sessionStartedAt: number | null;
+  sessionRowsAdded: number;
 }
 
 export interface PersistedData {
-  currentProject: Project;
-  lastSavedAt: string;
+  projects: Project[];
+  activeProjectId: string;
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +8,7 @@ import { ActiveProjectCard } from '../components/ActiveProjectCard';
 import { RowCounter } from '../components/RowCounter';
 import { CounterControls } from '../components/CounterControls';
 import { FooterStats } from '../components/FooterStats';
+import { ProjectModal } from '../components/ProjectModal';
 
 import { useRowCounter } from '../hooks/useRowCounter';
 import { useSessionTimer } from '../hooks/useSessionTimer';
@@ -21,14 +22,22 @@ function calculatePace(sessionRowsAdded: number, sessionStartedAt: number | null
 }
 
 export default function HomeScreen() {
+  const [modalVisible, setModalVisible] = useState(false);
+
   const {
     count,
-    currentProject,
+    activeProject,
+    projects,
+    activeProjectId,
     sessionRowsAdded,
     sessionStartedAt,
     increment,
     decrement,
     reset,
+    createProject,
+    switchProject,
+    renameProject,
+    deleteProject,
   } = useRowCounter();
 
   const { display: sessionTime } = useSessionTimer(sessionStartedAt);
@@ -42,13 +51,27 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Header />
-        <ActiveProjectCard projectName={currentProject.name} />
+        <ActiveProjectCard
+          projectName={activeProject?.name ?? ''}
+          onPress={() => setModalVisible(true)}
+        />
         <View style={styles.counterSection}>
           <RowCounter count={count} onReset={reset} />
           <CounterControls onDecrement={decrement} onIncrement={increment} />
         </View>
         <FooterStats sessionTime={sessionTime} pace={pace} />
       </ScrollView>
+
+      <ProjectModal
+        visible={modalVisible}
+        projects={projects}
+        activeProjectId={activeProjectId}
+        onClose={() => setModalVisible(false)}
+        onSwitch={switchProject}
+        onCreate={createProject}
+        onRename={renameProject}
+        onDelete={deleteProject}
+      />
     </SafeAreaView>
   );
 }
