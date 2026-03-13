@@ -5,11 +5,12 @@ import { theme } from '../constants/theme';
 
 interface Props {
   projectName: string;
+  onPress: () => void;
 }
 
-export function ActiveProjectCard({ projectName }: Props) {
+export function ActiveProjectCard({ projectName, onPress }: Props) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.iconWrapper}>
         <Text style={styles.emoji}>🧶</Text>
       </View>
