@@ -3,6 +3,8 @@ export interface Project {
   name: string;
   rowCount: number;
   createdAt: string;
+  sessionStartedAt: number | null;
+  sessionRowsAdded: number;
 }
 
 export interface PersistedData {
