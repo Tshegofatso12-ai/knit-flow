@@ -28,6 +28,16 @@
     "web": {
       "favicon": "./assets/knitflow.png"
     },
-    "plugins": ["expo-router", "expo-font"]
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3022911898728747~5661893626",
+          "iosAppId": "ca-app-pub-3022911898728747~5661893626"
+        }
+      ]
+    ]
   }
 }
