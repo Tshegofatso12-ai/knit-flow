@@ -1,0 +1,32 @@
+export const theme = {
+  colors: {
+    background: '#fdfbf9',
+    foreground: '#433935',
+    primary: '#d4a373',
+    primaryForeground: '#ffffff',
+    secondary: '#faedcd',
+    secondaryForeground: '#433935',
+    border: '#e8e2de',
+    card: '#ffffff',
+    cardForeground: '#2C332A',
+    muted: '#E8E6E1',
+    mutedForeground: '#7B8579',
+    destructive: '#C97A7E',
+    input: '#F0EFEA',
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
+    full: 9999,
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+} as const;
