@@ -36,6 +36,8 @@ export default function HomeScreen() {
     reset,
     createProject,
     switchProject,
+    renameProject,
+    deleteProject,
   } = useRowCounter();
 
   const { display: sessionTime } = useSessionTimer(sessionStartedAt);
@@ -67,6 +69,8 @@ export default function HomeScreen() {
         onClose={() => setModalVisible(false)}
         onSwitch={switchProject}
         onCreate={createProject}
+        onRename={renameProject}
+        onDelete={deleteProject}
       />
     </SafeAreaView>
   );

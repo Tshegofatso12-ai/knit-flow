@@ -146,6 +146,35 @@ export function useRowCounter() {
     [saveImmediately]
   );
 
+  const renameProject = useCallback(
+    (id: string, name: string) => {
+      setProjects((prev) => {
+        const updated = prev.map((p) => (p.id === id ? { ...p, name: name.trim() } : p));
+        saveImmediately(updated, activeProjectId);
+        return updated;
+      });
+    },
+    [activeProjectId, saveImmediately]
+  );
+
+  const deleteProject = useCallback(
+    (id: string) => {
+      setProjects((prev) => {
+        if (prev.length <= 1) return prev; // never delete the last project
+        const updated = prev.filter((p) => p.id !== id);
+        const newActiveId = id === activeProjectId ? updated[0].id : activeProjectId;
+        if (id === activeProjectId) {
+          setActiveProjectId(newActiveId);
+          setSessionRowsAdded(0);
+          setSessionStartedAt(null);
+        }
+        saveImmediately(updated, newActiveId);
+        return updated;
+      });
+    },
+    [activeProjectId, saveImmediately]
+  );
+
   // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
@@ -168,5 +197,7 @@ export function useRowCounter() {
     reset,
     createProject,
     switchProject,
+    renameProject,
+    deleteProject,
   };
 }
